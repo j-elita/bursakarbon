@@ -1,0 +1,67 @@
+function processBursaKarbon() {
+  var today = new Date();
+  var day = today.getDay(); // getDay returns 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+  if (day === 0 || day === 6) { // 0 is Sunday, 6 is Saturday
+    Logger.log('Today is a weekend. Exiting.');
+    return; // Exit the function if it's Saturday or Sunday
+  }
+  
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Sheet 1: Input Bursa Karbon
+  var inputSheet = ss.getSheetByName("Input Bursa Karbon");
+  if (!inputSheet) {
+    Logger.log('Input Bursa Karbon sheet not found!');
+    return;
+  }
+  
+  // Sheet 2: Bursa Karbon (DAILY-INPUT)
+  var dailyInputSheet = ss.getSheetByName("Bursa Karbon (DAILY-INPUT)");
+  if (!dailyInputSheet) {
+    Logger.log('Bursa Karbon (DAILY-INPUT) sheet not found!');
+    return;
+  }
+  
+  // Step 1: Copy the value from B12-C12 in Sheet 1
+  var rangeB12C12 = inputSheet.getRange("B12:C12");
+  var valuesB12C12 = rangeB12C12.getValues();
+  Logger.log('Values in B12:C12: ' + JSON.stringify(valuesB12C12));
+  
+  // Step 2: Special paste the previous value to B15-C15 in Sheet 1
+  var rangeB15C15 = inputSheet.getRange("B15:C15");
+  rangeB15C15.setValues(valuesB12C12);
+  SpreadsheetApp.flush(); // Ensure the changes are applied immediately
+  
+  // Verify the values are correctly copied
+  var valuesB15C15 = rangeB15C15.getValues();
+  Logger.log('Values in B15:C15 after copy: ' + JSON.stringify(valuesB15C15));
+  
+  // Step 3: Copy the value from B15-C15 in Sheet 1
+  valuesB15C15 = rangeB15C15.getValues();
+  Logger.log('Values in B15:C15 to be copied: ' + JSON.stringify(valuesB15C15));
+  
+  // Step 4: Find an empty row in Sheet 2 that goes after A7
+  var lastRow = dailyInputSheet.getLastRow();
+  Logger.log('Last row in Bursa Karbon (DAILY-INPUT): ' + lastRow);
+  var emptyRow = (lastRow < 7) ? 8 : lastRow + 1;
+  Logger.log('Empty row to paste: ' + emptyRow);
+  
+  // Step 5: Starting from the A column on an empty row in Sheet 2, special paste the previous value (B15-C15) from Sheet 1
+  var rangeToPaste = dailyInputSheet.getRange(emptyRow, 1, 1, 2); // A and B columns
+  rangeToPaste.setValues(valuesB15C15);
+  SpreadsheetApp.flush(); // Ensure the changes are applied immediately
+  
+  Logger.log('Values pasted to Bursa Karbon (DAILY-INPUT): ' + JSON.stringify(valuesB15C15) + ' at row ' + emptyRow);
+  
+  // Step 6: Delete the B15 value in Sheet 1. Make sure that this step is not skipped
+  var cellB15 = inputSheet.getRange("B15");
+  cellB15.clearContent();
+  Logger.log('Value in B15 cleared in Input Bursa Karbon sheet.');
+}
+
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Custom Scripts')
+    .addItem('Process Bursa Karbon', 'processBursaKarbon')
+    .addToUi();
+}
